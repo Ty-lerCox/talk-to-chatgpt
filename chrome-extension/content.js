@@ -280,6 +280,39 @@ function CN_CheckNewMessages() {
     setTimeout(CN_CheckNewMessages, 100);
 }
 
+// Check for new messages the bot has sent. If a new message is found, it will be read out loud
+function CN_CheckNewMessagesOnce() {
+    // Any new messages?
+    var currentMessageCount = jQuery('.text-base').length;
+    // New message!
+    CN_MESSAGE_COUNT = currentMessageCount;
+    CN_CURRENT_MESSAGE = jQuery('.text-base:last');
+    CN_CURRENT_MESSAGE_SENTENCES = []; // Reset list of parts already spoken
+    CN_CURRENT_MESSAGE_SENTENCES_NEXT_READ = 0;
+
+    // Split current message into parts
+    if (CN_CURRENT_MESSAGE && CN_CURRENT_MESSAGE.length) {
+        var currentText = CN_CURRENT_MESSAGE.text() + '';
+        var newSentences = CN_SplitIntoSentences(currentText);
+        if (
+            newSentences != null &&
+            newSentences.length != CN_CURRENT_MESSAGE_SENTENCES.length
+        ) {
+            // There is a new part of a sentence!
+            var nextRead = CN_CURRENT_MESSAGE_SENTENCES_NEXT_READ;
+            for (i = nextRead; i < newSentences.length; i++) {
+                CN_CURRENT_MESSAGE_SENTENCES_NEXT_READ = i + 1;
+
+                var lastPart = newSentences[i];
+                CN_SayOutLoud(lastPart, i);
+            }
+            CN_CURRENT_MESSAGE_SENTENCES = newSentences;
+        }
+    }
+
+    setTimeout(CN_CheckNewMessages, 100);
+}
+
 // Send a message to the bot (will simply put text in the textarea and simulate a send button click)
 function CN_SendMessage(text) {
     // Put message in textarea
@@ -519,7 +552,6 @@ function CN_ToggleButtonClick() {
 
 // Start Talk-to-GPT (Start button)
 function CN_StartTTGPT() {
-    CN_SayOutLoud('OK');
     CN_FINISHED = false;
 
     // Hide start button, show action buttons
@@ -601,7 +633,8 @@ function CN_InitScript() {
             "<span class='CNToggle' title='Text-to-speech (bot voice) disabled. Click to enable' style='display:none;' data-cn='speakoff'>🔇 </span>  " + // Mute
             "<span class='CNToggle' title='Skip the message currently being read by the bot.' data-cn='skip'>⏩ </span>  " + // Skip
             "<span class='CNToggle' title='Open settings menu to change bot voice, language, and other settings' data-cn='settings'>⚙️</span> " + // Settings
-            '</span></span>'
+            "</span><button style='border: 1px solid #CCC; padding: 4px; margin: 6px; background: #FFF; border-radius: 4px; color:black;' id='CNReadButton'>▶️ Read</button> " + // Settings
+            '</span>'
     );
 
     setTimeout(function () {
@@ -612,6 +645,7 @@ function CN_InitScript() {
         jQuery('.CNToggle').css('cursor', 'pointer');
         jQuery('.CNToggle').on('click', CN_ToggleButtonClick);
         jQuery('#CNStartButton').on('click', CN_StartTTGPT);
+        jQuery('#CNReadButton').on('click', CN_CheckNewMessagesOnce);
         // Say OK to confirm it has started
         /*setTimeout(function() {
 		
